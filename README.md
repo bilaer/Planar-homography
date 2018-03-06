@@ -6,13 +6,13 @@ In this implementation, I wrote a DoG keypoints detector and BRIEF descriptors a
 Using above functions, I implemented a function that calcuate the planar homography and use it to generate simple panorama.
 
 ## Result
-Result of matching using BRIEF descriptor and hamming distance brute force matching
+### Feature matching using BRIEF descriptor
 ![alt text](https://github.com/bilaer/Planar-homography/blob/master/match.jpg)
 
-Result of Robust RANSAC estimation. Green lines are inliners and red lines are outliners
+### RANSAC
 ![alt text](https://github.com/bilaer/Planar-homography/blob/master/ransac.jpg)
 
-Result of image stitching
+### Image Stitching
 Left Image:
 ![alt text](https://github.com/bilaer/Planar-homography/blob/master/InclineL.jpg) 
 
