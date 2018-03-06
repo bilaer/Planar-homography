@@ -515,6 +515,7 @@ def getMatch(imageOnePath, imageTwoPath, conTh, rTh, pattern, width, nbits, erro
 
     # Get the matching points and draw it
     match = briefOne.matching(briefTwo.getDescriptor(), errorTh)
+    matchTwo = match
     #else:
     #    match = briefTwo.matching(briefOne.getDescriptor(), errorTh)
 
@@ -549,96 +550,84 @@ def getMatch(imageOnePath, imageTwoPath, conTh, rTh, pattern, width, nbits, erro
             draw.ellipse((x1 - 1, y1 - 1, x1 + 1, y1 + 1), fill=tuple(color))
             draw.ellipse((x2 - 1, y2 - 1, x2 + 1, y2 + 1), fill=tuple(color))
         result.show()
+        #result.save("match.jpg")
         del draw
 
     # Draw inliners
-    # Get inliners
     match = parseMatchData(match)
     ransc = RANSAC(match)
     inliner, reca, H = ransc.computeHRANSAC()
     if isDraw:
         result = PIL.Image.fromarray(np.uint8(matchImage))
         draw = PIL.ImageDraw.Draw(result)
+        for point in match:
+            (x1, y1) = point[0][1], point[0][0]
+            (x2, y2) = point[1][1] + imageOneWidth, point[1][0]
+            color = [255, 0, 0]
+            draw.line((x1, y1, x2, y2), fill=tuple(color))
+            draw.ellipse((x1 - 1, y1 - 1, x1 + 1, y1 + 1), fill=tuple(color))
+            draw.ellipse((x2 - 1, y2 - 1, x2 + 1, y2 + 1), fill=tuple(color))
         for point in inliner:
-            #print(point)
             (x1, y1) = point[0][1], point[0][0]
-            #print(x1, y1)
             (x2, y2) = point[1][1] + imageOneWidth, point[1][0]
-            #print(x2, y2)
             color = [0, 255, 0]
             draw.line((x1, y1, x2, y2), fill=tuple(color))
             draw.ellipse((x1 - 1, y1 - 1, x1 + 1, y1 + 1), fill=tuple(color))
             draw.ellipse((x2 - 1, y2 - 1, x2 + 1, y2 + 1), fill=tuple(color))
+
         result.show()
+        result.save("ransac.jpg")
         del draw
+    return H, reca
 
-        # Draw rejected correspondences
-        result = PIL.Image.fromarray(np.uint8(matchImage))
-        draw = PIL.ImageDraw.Draw(result)
-        for point in reca:
-            # print(point)
-            (x1, y1) = point[0][1], point[0][0]
-            # print(x1, y1)
-            (x2, y2) = point[1][1] + imageOneWidth, point[1][0]
-            # print(x2, y2)
-            color = [0, 255, 0]
-            draw.line((x1, y1, x2, y2), fill=tuple(color))
-            draw.ellipse((x1 - 1, y1 - 1, x1 + 1, y1 + 1), fill=tuple(color))
-            draw.ellipse((x2 - 1, y2 - 1, x2 + 1, y2 + 1), fill=tuple(color))
-        result.show()
-        del draw
-    return H, match
+# Create a panorama using homography matrix calculated above
+def panorama(imageOneName, imageTwoName):
+    # Calculate the homography matrix
+    pattern = Pattern(9, 256)
+    H, inliner = getMatch(imageOneName, imageTwoName, 0.03, 12, pattern, 9, 256, 0.07, True)
 
+    # Wrap image
+    img1 = cv2.imread(imageOneName, 0)
+    output = cv2.warpPerspective(img1, np.linalg.inv(H), (500, 500))
+    arrayOutput = np.array(output)
 
-pattern = Pattern(9, 256)
-H, match = getMatch("incline_R01.jpg", "incline_L01.jpg", 0.03, 12, pattern, 9, 256, 0.14, True)
+    # Calculate the transformation of keypoints
+    afterTransMatch = dict()
+    for point in inliner:
+        pt = np.array([[point[0][1]], [point[0][0]], [1]])
+        newPt = np.matmul(np.linalg.inv(H), pt)
+        newPt = tuple([int(round(newPt[1][0] / newPt[2][0])), int(round(newPt[0][0] / newPt[2][0]))])
+        afterTransMatch[newPt] = tuple([point[1][0], point[1][1]])
 
-img1 = cv2.imread("incline_R01.jpg", 0)
-img2 = cv2.imread("incline_L01.jpg", 0)
-row, col = img1.shape[:2]
-row1, col1 = img2.shape[:2]
-output = cv2.warpPerspective(img1, np.linalg.inv(H), (500, 500))
-arrayOutput = np.array(output)
-print("the shape of output: ", arrayOutput)
-test = dict()
-for point in match:
-    pt = np.array([[point[0][1]], [point[0][0]], [1]])
-    newPt = np.matmul(np.linalg.inv(H), pt)
-    newPt = tuple([int(newPt[1][0]/newPt[2][0]), int(newPt[0][0]/newPt[2][0])])
-    test[newPt] = tuple([point[1][0], point[1][1]])
-imageOne = image("incline_L01.jpg")
-imageTwoHeight, imageTwoWidth = arrayOutput.shape[0], arrayOutput.shape[1]
-imageOneHeight, imageOneWidth = imageOne.GetHeight(), imageOne.GetWidth()
+    # Intialize the final panorama image
+    imageOne = image(imageTwoName)
+    imageTwoHeight, imageTwoWidth = arrayOutput.shape[0], arrayOutput.shape[1]
+    imageOneHeight, imageOneWidth = imageOne.GetHeight(), imageOne.GetWidth()
+    matchImage = np.zeros((max(imageOneHeight, imageTwoHeight), (imageOneWidth + imageTwoWidth), 3))
+    matchImage[:imageOneHeight, :imageOneWidth, 0] = imageOne.GetGrey()
+    matchImage[:imageOneHeight, :imageOneWidth, 1] = imageOne.GetGrey()
+    matchImage[:imageOneHeight, :imageOneWidth, 2] = imageOne.GetGrey()
+    matchImage[:imageTwoHeight, imageOneWidth:, 0] = arrayOutput
+    matchImage[:imageTwoHeight, imageOneWidth:, 1] = arrayOutput
+    matchImage[:imageTwoHeight, imageOneWidth:, 2] = arrayOutput
 
-matchImage = np.zeros((max(imageOneHeight, imageTwoHeight), (imageOneWidth + imageTwoWidth), 3))
-matchImage[:imageOneHeight, :imageOneWidth, 0] = arrayOutput
-matchImage[:imageOneHeight, :imageOneWidth, 1] = arrayOutput
-matchImage[:imageOneHeight, :imageOneWidth, 2] = arrayOutput
-matchImage[:imageTwoHeight, imageOneWidth:, 0] = imageTwo.GetGrey()
-matchImage[:imageTwoHeight, imageOneWidth:, 1] = imageTwo.GetGrey()
-matchImage[:imageTwoHeight, imageOneWidth:, 2] = imageTwo.GetGrey()
+    # Get the move parameter
+    move = []
+    for point in afterTransMatch:
+        (x1, y1) = afterTransMatch[point][1] + imageOneWidth, afterTransMatch[point][0]
+        (x2, y2) = point[1], point[0]
+        move = [x1 - x2, y1 - y2]
+        break
 
-result = PIL.Image.fromarray(np.uint8(matchImage))
-draw = PIL.ImageDraw.Draw(result)
-for point in test:
-    # print(point)
-    (x1, y1) = point[1], point[0]
-    # print(x1, y1)
-    (x2, y2) = test[point][1] + imageOneWidth, test[point][0]
-    # print(x2, y2)
-    color = [0, 255, 0]
-    draw.line((x1, y1, x2, y2), fill=tuple(color))
-    draw.ellipse((x1 - 1, y1 - 1, x1 + 1, y1 + 1), fill=tuple(color))
-    draw.ellipse((x2 - 1, y2 - 1, x2 + 1, y2 + 1), fill=tuple(color))
-result.show()
-del draw
+    imageOneGrey = imageOne.GetGrey()
+    for i in range(imageOneHeight):
+        for j in range(imageOneWidth):
+            matchImage[i + move[1]][j + move[0]] = imageOneGrey[i][j]
 
-
-#img_flip = cv2.flip(img_output, 1)
-print("open the image")
-
-cv2.imshow("Test1", output)
-cv2.waitKey(0)
+    final = matchImage[:imageOneHeight, move[0]:]
+    final = PIL.Image.fromarray(np.uint8(final))
+    final.show()
+    final.save("final.jpg")
 
 
 
