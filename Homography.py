@@ -554,6 +554,7 @@ def getMatch(imageOnePath, imageTwoPath, conTh, rTh, pattern, width, nbits, erro
         del draw
 
     # Draw inliners
+    # Get inliners
     match = parseMatchData(match)
     ransc = RANSAC(match)
     inliner, reca, H = ransc.computeHRANSAC()
@@ -588,8 +589,10 @@ def panorama(imageOneName, imageTwoName):
 
     # Wrap image
     img1 = cv2.imread(imageOneName, 0)
-    output = cv2.warpPerspective(img1, np.linalg.inv(H), (500, 500))
-    arrayOutput = np.array(output)
+    arrayOutput = cv2.warpPerspective(img1, np.linalg.inv(H), (800, 500))
+    tran =PIL.Image.fromarray(np.uint8(arrayOutput))
+    tran.show()
+    tran.save("trans.jpg")
 
     # Calculate the transformation of keypoints
     afterTransMatch = dict()
@@ -628,6 +631,62 @@ def panorama(imageOneName, imageTwoName):
     final = PIL.Image.fromarray(np.uint8(final))
     final.show()
     final.save("final.jpg")
+
+
+panorama("incline_R01.jpg", "incline_L01.jpg")
+
+'''pattern = Pattern(9, 256)
+H, inliner = getMatch("incline_R01.jpg", "incline_L01.jpg", 0.03, 12, pattern, 9, 256, 0.14, True)
+img1 = cv2.imread("incline_R01.jpg", 0)
+img2 = cv2.imread("incline_L01.jpg", 0)
+row, col = img1.shape[:2]
+row1, col1 = img2.shape[:2]
+output = cv2.warpPerspective(img1, np.linalg.inv(H), (500, 500))
+cv2.imshow("Test1", output)
+cv2.waitKey(0)
+arrayOutput = np.array(output)
+
+
+test = dict()
+for point in inliner:
+    pt = np.array([[point[0][1]], [point[0][0]], [1]])
+    newPt = np.matmul(np.linalg.inv(H), pt)
+    newPt = tuple([int(newPt[1][0]/newPt[2][0]), int(newPt[0][0]/newPt[2][0])])
+    test[newPt] = tuple([point[1][0], point[1][1]])
+imageOne = image("incline_L01.jpg")
+imageTwoHeight, imageTwoWidth = arrayOutput.shape[0], arrayOutput.shape[1]
+imageOneHeight, imageOneWidth = imageOne.GetHeight(), imageOne.GetWidth()
+
+matchImage = np.zeros((max(imageOneHeight, imageTwoHeight), (imageOneWidth + imageTwoWidth), 3))
+matchImage[:imageOneHeight, :imageOneWidth, 0] = imageOne.GetGrey()
+matchImage[:imageOneHeight, :imageOneWidth, 1] = imageOne.GetGrey()
+matchImage[:imageOneHeight, :imageOneWidth, 2] = imageOne.GetGrey()
+matchImage[:imageTwoHeight, imageOneWidth:, 0] = arrayOutput
+matchImage[:imageTwoHeight, imageOneWidth:, 1] = arrayOutput
+matchImage[:imageTwoHeight, imageOneWidth:, 2] = arrayOutput
+
+# Get the move parameter
+move = []
+for point in test:
+    # print(point)
+    (x1, y1) = test[point][1] + imageOneWidth, test[point][0]
+    # print(x1, y1)
+    (x2, y2) = point[1], point[0]
+    move = [x1 - x2, y1 - y2]
+    break
+
+print("the move is: ", move)
+imageOneGrey = imageOne.GetGrey()
+for i in range(imageOneHeight):
+    for j in  range(imageOneWidth):
+        print("current i and j: %d %d" %(i, j))
+        matchImage[i][j + move[0]] = imageOneGrey[i][j]
+
+final = matchImage[:, move[0]:]
+result = PIL.Image.fromarray(np.uint8(final)).show()'''
+
+
+
 
 
 
