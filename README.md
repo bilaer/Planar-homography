@@ -7,16 +7,18 @@ Using above functions, I implemented a function that calcuate the planar homogra
 
 ## Result
 Result of matching using BRIEF descriptor and hamming distance brute force matching
-![alt text]https://github.com/bilaer/Planar-homography/blob/master/match.jpg
+![alt text](https://github.com/bilaer/Planar-homography/blob/master/match.jpg)
 
 Result of Robust RANSAC estimation. Green lines are inliners and red lines are outliners
 ![alt text](https://github.com/bilaer/Planar-homography/blob/master/ransac.jpg)
+
 Result of image stitching
 Left Image:
-
 ![alt text](https://github.com/bilaer/Planar-homography/blob/master/InclineL.jpg) 
+
 Right Image:
 ![Right Image](https://github.com/bilaer/Planar-homography/blob/master/InclineR.jpg)
+
 Result image:
 ![alt text](https://github.com/bilaer/Planar-homography/blob/master/final.jpg)
 
