@@ -13,13 +13,7 @@ Using above functions, I implemented a function that calcuate the planar homogra
 ![alt text](https://github.com/bilaer/Planar-homography/blob/master/ransac.jpg)
 
 ### Image Stitching
-Left Image:
-![alt text](https://github.com/bilaer/Planar-homography/blob/master/InclineL.jpg) 
-
-Right Image:
-![Right Image](https://github.com/bilaer/Planar-homography/blob/master/InclineR.jpg)
-
-Result image:
+![alt text](https://github.com/bilaer/Planar-homography/blob/master/InclineL.jpg) ![Right Image](https://github.com/bilaer/Planar-homography/blob/master/InclineR.jpg)
 ![alt text](https://github.com/bilaer/Planar-homography/blob/master/final.jpg)
 
 
